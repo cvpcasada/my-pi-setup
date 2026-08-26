@@ -1,5 +1,5 @@
 import { CONFIG_DIR_NAME, getAgentDir } from "@earendil-works/pi-coding-agent";
-import { readFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
 export const LAYOUT_STYLES = ["stacked", "split"] as const;
@@ -24,6 +24,18 @@ export async function loadLayoutStyle(
     projectLayout ??
     globalLayout ??
     DEFAULT_LAYOUT
+  );
+}
+
+export async function saveGlobalLayoutStyle(
+  layout: LayoutStyle,
+): Promise<void> {
+  const agentDir = getAgentDir();
+  await mkdir(agentDir, { recursive: true });
+  await writeFile(
+    join(agentDir, CONFIG_FILE_NAME),
+    `${JSON.stringify({ layout }, null, 2)}\n`,
+    "utf8",
   );
 }
 

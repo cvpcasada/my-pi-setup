@@ -2,14 +2,14 @@
 
 Pierre-themed inline diff rendering for pi's `edit` and `write` tools.
 
-The extension supports stacked and side-by-side layouts. Change the current session with:
+The extension supports stacked and side-by-side layouts. Set and save the global layout with:
 
 ```text
 /pi-diff-layout split
 /pi-diff-layout stacked
 ```
 
-For a persistent global preference, create the ignored file `~/.pi/agent/pi-diff.json`:
+The command writes the ignored file `~/.pi/agent/pi-diff.json`. You can also edit it directly:
 
 ```json
 {

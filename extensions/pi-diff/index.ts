@@ -25,6 +25,7 @@ import {
   LAYOUT_STYLES,
   loadLayoutStyle,
   parseLayoutStyle,
+  saveGlobalLayoutStyle,
   type LayoutStyle,
 } from "./lib/config.js";
 import { loadHighlightedDiff } from "./lib/pierreHighlight.js";
@@ -49,7 +50,7 @@ export default function (pi: ExtensionAPI) {
   });
 
   pi.registerCommand("pi-diff-layout", {
-    description: "Set the Pi diff layout for the current session",
+    description: "Set and save the global Pi diff layout",
     async handler(args, ctx) {
       const requested = args.trim();
       let nextLayout = parseLayoutStyle(requested);
@@ -70,8 +71,15 @@ export default function (pi: ExtensionAPI) {
       }
 
       if (nextLayout) {
-        layout = nextLayout;
-        ctx.ui.notify(`Pi diff layout: ${layout}`, "info");
+        try {
+          await saveGlobalLayoutStyle(nextLayout);
+          layout = nextLayout;
+          ctx.ui.notify(`Pi diff layout saved: ${layout}`, "info");
+        } catch (error) {
+          const message =
+            error instanceof Error ? error.message : String(error);
+          ctx.ui.notify(`Failed to save Pi diff layout: ${message}`, "error");
+        }
       }
     },
   });

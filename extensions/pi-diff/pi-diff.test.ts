@@ -1,10 +1,15 @@
 import assert from "node:assert/strict";
-import { mkdir, mkdtemp, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
-import { CONFIG_DIR_NAME, type Theme } from "@earendil-works/pi-coding-agent";
+import {
+  CONFIG_DIR_NAME,
+  type ExtensionAPI,
+  type Theme,
+} from "@earendil-works/pi-coding-agent";
 import { visibleWidth } from "@earendil-works/pi-tui";
+import piDiffExtension from "./index.js";
 import { InlineDiffComponent } from "./components/DiffViewer.js";
 import { loadLayoutStyle, parseLayoutStyle } from "./lib/config.js";
 import { loadHighlightedDiff } from "./lib/pierreHighlight.js";
@@ -62,6 +67,60 @@ test("trusted project config overrides the default layout", async () => {
     } else {
       process.env.PI_DIFF_LAYOUT = previous;
     }
+  }
+});
+
+test("layout command persists globally for the next session", async () => {
+  const agentDir = await mkdtemp(join(tmpdir(), "pi-diff-agent-"));
+  const cwd = await mkdtemp(join(tmpdir(), "pi-diff-project-"));
+  const previousAgentDir = process.env.PI_CODING_AGENT_DIR;
+  const previousLayout = process.env.PI_DIFF_LAYOUT;
+  process.env.PI_CODING_AGENT_DIR = agentDir;
+  delete process.env.PI_DIFF_LAYOUT;
+
+  let commandHandler:
+    ((args: string, ctx: unknown) => Promise<void>) | undefined;
+  const pi = {
+    on() {},
+    registerCommand(
+      name: string,
+      options: { handler: (args: string, ctx: unknown) => Promise<void> },
+    ) {
+      if (name === "pi-diff-layout") {
+        commandHandler = options.handler;
+      }
+    },
+    registerTool() {},
+  } as unknown as ExtensionAPI;
+
+  try {
+    piDiffExtension(pi);
+    assert.ok(commandHandler);
+    await commandHandler("split", {
+      ui: {
+        notify() {},
+        async select() {
+          return undefined;
+        },
+      },
+    });
+
+    assert.equal(await loadLayoutStyle(cwd, false), "split");
+  } finally {
+    if (previousAgentDir === undefined) {
+      delete process.env.PI_CODING_AGENT_DIR;
+    } else {
+      process.env.PI_CODING_AGENT_DIR = previousAgentDir;
+    }
+    if (previousLayout === undefined) {
+      delete process.env.PI_DIFF_LAYOUT;
+    } else {
+      process.env.PI_DIFF_LAYOUT = previousLayout;
+    }
+    await Promise.all([
+      rm(agentDir, { recursive: true, force: true }),
+      rm(cwd, { recursive: true, force: true }),
+    ]);
   }
 });
 

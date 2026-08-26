@@ -11,6 +11,7 @@ My global [pi](https://github.com/earendil-works/pi) setup. The repo lives direc
 - `copy-all`: copy session content
 - `firecrawl-search`: web search, scraping, and crawling
 - `model-info`: model and context information
+- `pi-diff`: Pierre-themed inline rendering for edit and write diffs
 - `subagents`: delegated agents using pi, Claude Code, or Codex
 - `workflows`: multi-agent workflow orchestration
 
@@ -31,4 +32,6 @@ See [SETUP.md](SETUP.md).
 
 ## Private files
 
-Pi's credentials, settings, sessions, model configuration, runtime data, and `.env` are ignored. `.env.example` documents the environment variables used by extensions.
+Pi's credentials, settings, sessions, model configuration, extension preferences, runtime data, and `.env` are ignored. `.env.example` documents the environment variables used by extensions.
+
+`pi-diff` is based on [tanvesh01/pierre-diffs](https://github.com/tanvesh01/pierre-diffs) and is included under its MIT license.

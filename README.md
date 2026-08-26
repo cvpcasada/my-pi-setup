@@ -34,4 +34,6 @@ See [SETUP.md](SETUP.md).
 
 Pi's credentials, settings, sessions, model configuration, extension preferences, runtime data, and `.env` are ignored. `.env.example` documents the environment variables used by extensions.
 
-`pi-diff` is based on [tanvesh01/pierre-diffs](https://github.com/tanvesh01/pierre-diffs) and is included under its MIT license.
+## License
+
+This setup is licensed under the [MIT License](LICENSE). The included `pi-diff` code retains its upstream MIT license and attribution.

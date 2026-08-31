@@ -8,6 +8,7 @@ My global [pi](https://github.com/earendil-works/pi) setup. The repo lives direc
 
 - `ask-user`: multiple-choice prompts
 - `background-terminals`: long-running process management
+- `bash-summary`: OpenCode-style collapsed Bash output with Ctrl+O expansion
 - `copy-all`: copy session content
 - `firecrawl-search`: web search, scraping, and crawling
 - `model-info`: model and context information

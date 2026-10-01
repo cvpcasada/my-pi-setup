@@ -26,7 +26,7 @@ import type {
   ExtensionUIContext,
 } from "@earendil-works/pi-coding-agent";
 import { getMarkdownTheme } from "@earendil-works/pi-coding-agent";
-import { Markdown, Text } from "@earendil-works/pi-tui";
+import { Box, Markdown } from "@earendil-works/pi-tui";
 import { Type } from "typebox";
 import type { TerminalSnapshot } from "./src/domain.ts";
 import { TerminalManager, type TerminalManagerShape } from "./src/manager.ts";
@@ -54,6 +54,10 @@ import {
 } from "./src/runtime.ts";
 import { sanitizeText } from "./src/ui/output-view.ts";
 import { openTerminalPicker } from "./src/ui/ps.ts";
+import {
+  createTerminalToolRenderers,
+  summaryRow,
+} from "./src/ui/tool-rendering.ts";
 
 const WIDGET_KEY = "background-terminals";
 
@@ -205,6 +209,7 @@ export default function (pi: ExtensionAPI) {
 
   pi.registerTool({
     name: "bg_start",
+    ...createTerminalToolRenderers("bg_start"),
     label: "Start Background Terminal",
     description: BG_START_TOOL_DESCRIPTION,
     promptSnippet: BG_START_PROMPT_SNIPPET,
@@ -251,6 +256,7 @@ export default function (pi: ExtensionAPI) {
 
   pi.registerTool({
     name: "bg_status",
+    ...createTerminalToolRenderers("bg_status"),
     label: "Check Background Terminal",
     description: BG_STATUS_TOOL_DESCRIPTION,
     parameters: Type.Object({
@@ -285,6 +291,7 @@ export default function (pi: ExtensionAPI) {
 
   pi.registerTool({
     name: "bg_list",
+    ...createTerminalToolRenderers("bg_list"),
     label: "List Background Terminals",
     description: BG_LIST_TOOL_DESCRIPTION,
     parameters: Type.Object({}),
@@ -311,6 +318,7 @@ export default function (pi: ExtensionAPI) {
 
   pi.registerTool({
     name: "bg_kill",
+    ...createTerminalToolRenderers("bg_kill"),
     label: "Kill Background Terminals",
     description: BG_KILL_TOOL_DESCRIPTION,
     parameters: Type.Object({
@@ -391,28 +399,20 @@ export default function (pi: ExtensionAPI) {
       // process output — sanitize ANSI/control chars or the transcript smears.
       const body = sanitizeText(content.split("\n").slice(1).join("\n").trim());
 
+      const box = new Box(1, 1, (text) =>
+        theme.bg(failed ? "toolErrorBg" : "toolSuccessBg", text),
+      );
+      box.addChild(
+        summaryRow(
+          () =>
+            header.replace(/[\r\n]+/g, " ") +
+            (expanded ? "" : theme.fg("dim", " (ctrl+o to expand)")),
+        ),
+      );
       if (expanded) {
-        const md = new Markdown(`${body}`, 0, 0, getMarkdownTheme());
-        const container = new Text(header, 0, 0);
-        return {
-          render: (width: number) => [
-            ...container.render(width),
-            ...md.render(width),
-          ],
-          invalidate: () => {
-            container.invalidate();
-            md.invalidate();
-          },
-        };
+        box.addChild(new Markdown(body, 0, 0, getMarkdownTheme()));
       }
-
-      const previewLines = body.split("\n").slice(0, 8);
-      let text = header;
-      for (const line of previewLines)
-        text += `\n${theme.fg("toolOutput", line)}`;
-      if (body.split("\n").length > 8)
-        text += `\n${theme.fg("dim", "... (ctrl+o to expand)")}`;
-      return new Text(text, 0, 0);
+      return box;
     },
   );
 

@@ -13,6 +13,7 @@ My global [pi](https://github.com/earendil-works/pi) setup. The repo lives direc
 - `firecrawl-search`: web search, scraping, and crawling
 - `model-info`: model and context information
 - `pi-diff`: Pierre-themed inline rendering for edit and write diffs
+- `read-summary`: consecutive reads in each assistant message collapse into one entry; Ctrl+O reveals file paths and requested line ranges
 - `subagents`: delegated agents using pi, Claude Code, or Codex
 - `workflows`: multi-agent workflow orchestration
 

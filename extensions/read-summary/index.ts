@@ -43,7 +43,7 @@ export default function readSummary(pi: ExtensionAPI) {
     ...getReadTool(process.cwd()),
     ...createToolSummary(pi, {
       toolName: "read",
-      icon: "≡",
+      titleStyle: "tool",
       runningVerb: "Reading",
       finishedVerb: "Read",
       singular: "file",

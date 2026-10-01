@@ -14,6 +14,7 @@ import { collectToolRuns } from "../shared/tool-summary.ts";
 import readSummary, { formatReadForDisplay } from "./index.ts";
 
 const theme = {
+  bold: (text: string) => text,
   fg: (_color: string, text: string) => text,
   bg: (_color: string, text: string) => text,
 } as Theme;
@@ -118,6 +119,47 @@ test("formats file paths and optional requested line ranges", () => {
   assert.equal(formatReadForDisplay({ path: "a\nb\tc" }), "a b c");
 });
 
+test("styles Read and Reading as bold tool titles, leaving counts and hints muted", () => {
+  const h = harness();
+  h.emit("message_end", { message: message([call("a"), call("b")]) });
+  const styles: Array<[string, string]> = [];
+  const styledTheme = {
+    ...theme,
+    bold: (text: string) => {
+      styles.push(["bold", text]);
+      return text;
+    },
+    fg: (color: string, text: string) => {
+      styles.push([color, text]);
+      return text;
+    },
+  } as Theme;
+  const leader = h.tool.renderCall({ path: "a.ts" }, styledTheme, context("a"));
+  assert.deepEqual(lines(leader), ["Reading 2 files · ctrl+o to expand"]);
+  assert.ok(
+    styles.some(([style, text]) => style === "bold" && text === "Reading"),
+  );
+  assert.ok(
+    styles.some(([style, text]) => style === "toolTitle" && text === "Reading"),
+  );
+  assert.ok(
+    styles.some(([style, text]) => style === "muted" && text === " 2 files"),
+  );
+  assert.ok(
+    styles.some(([style, text]) => style === "dim" && text === " · ctrl+o"),
+  );
+  styles.length = 0;
+  h.emit("message_end", { message: result("a") });
+  h.emit("message_end", { message: result("b") });
+  assert.deepEqual(lines(leader), ["Read 2 files · ctrl+o to expand"]);
+  assert.ok(
+    styles.some(([style, text]) => style === "bold" && text === "Read"),
+  );
+  assert.ok(
+    styles.some(([style, text]) => style === "toolTitle" && text === "Read"),
+  );
+});
+
 test("groups read runs but never crosses another tool", () => {
   const content = [
     call("a"),
@@ -138,7 +180,7 @@ test("collapses a streaming read run, expands paths and ranges, and updates on o
   let invalidations = 0;
   const ctx = context("a", { invalidate: () => invalidations++ });
   const leader = h.tool.renderCall({ path: "a.ts" }, theme, ctx) as Component;
-  assert.deepEqual(lines(leader), ["≡  Reading 1 file · ctrl+o to expand"]);
+  assert.deepEqual(lines(leader), ["Reading 1 file · ctrl+o to expand"]);
   h.emit("message_update", {
     message: message([
       call("a"),
@@ -146,7 +188,7 @@ test("collapses a streaming read run, expands paths and ranges, and updates on o
     ]),
   });
   assert.ok(invalidations > 0);
-  assert.deepEqual(lines(leader), ["≡  Reading 2 files · ctrl+o to expand"]);
+  assert.deepEqual(lines(leader), ["Reading 2 files · ctrl+o to expand"]);
   const expanded = h.tool.renderCall(
     { path: "a.ts" },
     theme,
@@ -154,7 +196,7 @@ test("collapses a streaming read run, expands paths and ranges, and updates on o
   ) as Component;
   assert.equal(expanded, leader);
   assert.deepEqual(lines(expanded), [
-    "≡  Reading 2 files",
+    "Reading 2 files",
     "… a.ts",
     "… b.ts (lines 20–29)",
   ]);
@@ -179,13 +221,13 @@ test("collapses a streaming read run, expands paths and ranges, and updates on o
     args: { path: "b.ts", offset: 20, limit: 10 },
   });
   assert.deepEqual(lines(expanded), [
-    "≡  Reading 2 files · 1 failed",
+    "Reading 2 files · 1 failed",
     "… a.ts",
     "! b.ts (lines 20–29)",
   ]);
   h.emit("message_end", { message: result("a") });
   assert.deepEqual(lines(expanded), [
-    "≡  Read 2 files · 1 failed",
+    "Read 2 files · 1 failed",
     "  a.ts",
     "! b.ts (lines 20–29)",
   ]);
@@ -205,7 +247,7 @@ test("separate assistant messages and mixed tools produce separate summaries", (
   for (const id of ["a", "b", "c"])
     assert.deepEqual(
       lines(h.tool.renderCall({ path: `${id}.ts` }, theme, context(id))),
-      ["≡  Reading 1 file · ctrl+o to expand"],
+      ["Reading 1 file · ctrl+o to expand"],
     );
 });
 
@@ -241,7 +283,7 @@ test("restores status on session load, tree change and compaction, retaining inv
       }),
     );
     assert.deepEqual(lines(component), [
-      "≡  Read 3 files · 2 failed",
+      "Read 3 files · 2 failed",
       "  a.ts",
       "! b.ts",
       "! interrupted.ts",
@@ -253,7 +295,7 @@ test("restores status on session load, tree change and compaction, retaining inv
       context("interrupted", { executionStarted: true, isPartial: false }),
     );
     assert.deepEqual(lines(component), [
-      "≡  Read 3 files · 2 failed",
+      "Read 3 files · 2 failed",
       "  a.ts",
       "! b.ts",
       "! interrupted.ts",
@@ -268,14 +310,14 @@ test("abort and agent end finish unresolved reads; shutdown clears grouping", ()
   });
   const leader = h.tool.renderCall({ path: "a.ts" }, theme, context("a"));
   assert.deepEqual(lines(leader), [
-    "≡  Read 2 files · 2 failed · ctrl+o to expand",
+    "Read 2 files · 2 failed · ctrl+o to expand",
   ]);
   h.emit("session_shutdown", {});
   h.emit("message_end", { message: message([call("c")]) });
   h.emit("agent_end", {});
   assert.deepEqual(
     lines(h.tool.renderCall({ path: "c.ts" }, theme, context("c"))),
-    ["≡  Read 1 file · 1 failed · ctrl+o to expand"],
+    ["Read 1 file · 1 failed · ctrl+o to expand"],
   );
 });
 
@@ -302,7 +344,7 @@ test("nested reads and unrelated execution events do not affect transcript group
   });
   h.emit("message_end", { message: result("a") });
   h.emit("message_end", { message: result("b") });
-  assert.deepEqual(lines(leader), ["≡  Read 2 files · ctrl+o to expand"]);
+  assert.deepEqual(lines(leader), ["Read 2 files · ctrl+o to expand"]);
 });
 
 test("delegates execution unchanged, including cwd, ranges, truncation, errors, cancellation and images", async () => {

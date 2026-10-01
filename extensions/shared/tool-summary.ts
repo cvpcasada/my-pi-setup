@@ -39,7 +39,8 @@ type Group = { leaderId: string; callIds: string[] };
 
 type SummaryOptions = {
   toolName: string;
-  icon: string;
+  icon?: string;
+  titleStyle?: "tool" | "muted";
   runningVerb: string;
   finishedVerb: string;
   singular: string;
@@ -102,8 +103,12 @@ class GroupComponent implements Component {
           this.options;
         const verb = running ? runningVerb : finishedVerb;
         const noun = calls.length === 1 ? singular : plural;
-        let header = this.theme.fg("toolTitle", `${icon}  `);
-        header += this.theme.fg("muted", `${verb} ${calls.length} ${noun}`);
+        let header = icon ? this.theme.fg("toolTitle", `${icon}  `) : "";
+        header +=
+          this.options.titleStyle === "tool"
+            ? this.theme.fg("toolTitle", this.theme.bold(verb)) +
+              this.theme.fg("muted", ` ${calls.length} ${noun}`)
+            : this.theme.fg("muted", `${verb} ${calls.length} ${noun}`);
         if (failed > 0) header += this.theme.fg("error", ` · ${failed} failed`);
         if (!this.expanded) {
           const expandKey = keyText("app.tools.expand") || "ctrl+o";

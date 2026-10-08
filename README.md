@@ -14,15 +14,12 @@ My global [pi](https://github.com/earendil-works/pi) setup. The repo lives direc
 - `model-info`: model and context information
 - `pi-diff`: Pierre-themed inline rendering for edit and write diffs
 - `read-summary`: consecutive reads in each assistant message collapse into one entry; Ctrl+O reveals file paths and requested line ranges
-- `subagents`: delegated agents using pi, Claude Code, or Codex
-- `workflows`: multi-agent workflow orchestration
 
 ### Skills
 
 Only skills used by included extensions are tracked:
 
 - `background-terminals`
-- `subagents`
 
 ### Themes
 

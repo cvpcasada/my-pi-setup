@@ -22,7 +22,7 @@ function oneLine(text: string) {
 }
 
 /** Truncate rather than wrap so even narrow terminals get exactly one row. */
-export function summaryRow(text: () => string): Component {
+function summaryRow(text: () => string): Component {
   return {
     render: (width) => [truncateToWidth(text(), width)],
     invalidate: () => {},

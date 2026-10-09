@@ -8,12 +8,11 @@ My global [pi](https://github.com/earendil-works/pi) setup. The repo lives direc
 
 - `ask-user`: multiple-choice prompts
 - `background-terminals`: long-running process management
-- `bash-summary`: OpenCode-style collapsed Bash output with Ctrl+O expansion
+- `compact-tools`: every tool call and background terminal exit renders as one line (icon, args, status, chevron); click or Ctrl+O expands
 - `copy-all`: copy session content
 - `firecrawl-search`: web search, scraping, and crawling
 - `model-info`: model and context information
 - `pi-diff`: Pierre-themed inline rendering for edit and write diffs
-- `read-summary`: consecutive reads in each assistant message collapse into one entry; Ctrl+O reveals file paths and requested line ranges
 
 ### Skills
 

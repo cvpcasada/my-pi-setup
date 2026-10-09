@@ -126,32 +126,60 @@ test("all tool registrations use compact renderers and completion messages hide 
       return text;
     },
   } as Theme;
-  const collapsed = renderMessage(message, { expanded: false }, trackedTheme);
+  const collapsed = renderMessage(
+    message,
+    { expanded: false, outputPad: 1 },
+    trackedTheme,
+  );
   const lines: string[] = collapsed.render(80);
-  // One content row inside the same one-column/one-row padding as Pi tools.
-  assert.equal(lines.length, 3);
-  assert.equal(lines[0].trim(), "");
-  assert.equal(lines[2].trim(), "");
-  assert.match(lines[1], /^ .+terminal bt-1.*exit 0/);
-  assert.ok(lines[1].endsWith(" "));
-  assert.ok(!lines.join("\n").includes("secret output"));
+  // Same single compact row as tool calls: no box, no output.
+  assert.equal(lines.length, 1);
+  assert.match(lines[0], /^ .+Terminal bt-1 · Build · exit 0 +✓ › $/);
   assert.ok(lines.every((line) => visibleWidth(line) === 80));
-  assert.deepEqual([...new Set(backgrounds)], ["toolSuccessBg"]);
+  assert.deepEqual(backgrounds, []);
   assert.ok(
     collapsed.render(10).every((line: string) => visibleWidth(line) <= 10),
   );
-  const expanded = renderMessage(message, { expanded: true }, trackedTheme);
-  assert.match(expanded.render(80).join("\n"), /secret output/);
-  assert.match(expanded.render(80).join("\n"), /last line/);
-  backgrounds.length = 0;
-  renderMessage(
-    {
-      ...message,
-      details: { ...message.details, status: "failed", exitCode: 1 },
-    },
-    { expanded: false },
+  const expanded = renderMessage(
+    message,
+    { expanded: true, outputPad: 1 },
     trackedTheme,
-  ).render(80);
-  assert.ok(backgrounds.length > 0);
+  );
+  const text = expanded.render(80).join("\n");
+  assert.match(text, /⌄/);
+  assert.match(text, /secret output/);
+  assert.match(text, /last line/);
+  assert.deepEqual([...new Set(backgrounds)], ["toolSuccessBg"]);
+  backgrounds.length = 0;
+  const failed = {
+    ...message,
+    details: { ...message.details, status: "failed", exitCode: 1 },
+  };
+  assert.match(
+    renderMessage(
+      failed,
+      { expanded: false, outputPad: 1 },
+      trackedTheme,
+    ).render(80)[0],
+    /exit 1 +✗ › $/,
+  );
+  renderMessage(failed, { expanded: true, outputPad: 1 }, trackedTheme).render(
+    80,
+  );
   assert.deepEqual([...new Set(backgrounds)], ["toolErrorBg"]);
+
+  // Clicking a collapsed result expands just that message; ctrl+o wins after.
+  const click = { type: "click", button: "left" } as any;
+  const row = renderMessage(message, { expanded: false, outputPad: 1 }, theme);
+  assert.deepEqual(row.handleMouse(click), { handled: true });
+  assert.match(row.render(80).join("\n"), /secret output/);
+  row.handleMouse(click);
+  assert.doesNotMatch(row.render(80).join("\n"), /secret output/);
+  row.handleMouse(click);
+  const reexpanded = renderMessage(
+    message,
+    { expanded: true, outputPad: 1 },
+    theme,
+  );
+  assert.match(reexpanded.render(80).join("\n"), /secret output/);
 });

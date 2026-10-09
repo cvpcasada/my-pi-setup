@@ -26,7 +26,8 @@ import type {
   ExtensionUIContext,
 } from "@earendil-works/pi-coding-agent";
 import { getMarkdownTheme } from "@earendil-works/pi-coding-agent";
-import { Box, Markdown } from "@earendil-works/pi-tui";
+import { Box, Container, Markdown } from "@earendil-works/pi-tui";
+import { ClickToExpand, compactRow } from "../shared/compact-row.ts";
 import { Type } from "typebox";
 import type { TerminalSnapshot } from "./src/domain.ts";
 import { TerminalManager, type TerminalManagerShape } from "./src/manager.ts";
@@ -54,10 +55,7 @@ import {
 } from "./src/runtime.ts";
 import { sanitizeText } from "./src/ui/output-view.ts";
 import { openTerminalPicker } from "./src/ui/ps.ts";
-import {
-  createTerminalToolRenderers,
-  summaryRow,
-} from "./src/ui/tool-rendering.ts";
+import { createTerminalToolRenderers } from "./src/ui/tool-rendering.ts";
 
 const WIDGET_KEY = "background-terminals";
 
@@ -369,7 +367,7 @@ export default function (pi: ExtensionAPI) {
 
   pi.registerMessageRenderer(
     "background-terminal-result",
-    (message, { expanded }, theme) => {
+    (message, { expanded, outputPad }, theme) => {
       const details = (message.details ?? {}) as {
         id?: string;
         title?: string;
@@ -379,19 +377,13 @@ export default function (pi: ExtensionAPI) {
       };
       const failed = details.status === "failed";
       const killed = details.status === "killed";
-      const icon = failed
-        ? theme.fg("error", "x")
-        : killed
-          ? theme.fg("muted", "■")
-          : theme.fg("success", "■");
       const how = killed
         ? "killed"
         : (details.signal ?? `exit ${details.exitCode ?? "?"}`);
-      const header =
-        `${icon} ` +
-        theme.fg("accent", theme.bold(`terminal ${details.id ?? "?"}`)) +
-        theme.fg("muted", ` · ${details.title ?? ""} · ${how}`);
-
+      const summary = [details.id ?? "?", details.title, how]
+        .filter(Boolean)
+        .join(" · ")
+        .replace(/\s+/g, " ");
       const content =
         typeof message.content === "string" ? message.content : "";
       // Remove only the summary line; the Error line (when present) is part
@@ -399,20 +391,26 @@ export default function (pi: ExtensionAPI) {
       // process output — sanitize ANSI/control chars or the transcript smears.
       const body = sanitizeText(content.split("\n").slice(1).join("\n").trim());
 
-      const box = new Box(1, 1, (text) =>
-        theme.bg(failed ? "toolErrorBg" : "toolSuccessBg", text),
-      );
-      box.addChild(
-        summaryRow(
-          () =>
-            header.replace(/[\r\n]+/g, " ") +
-            (expanded ? "" : theme.fg("dim", " (ctrl+o to expand)")),
-        ),
-      );
-      if (expanded) {
+      return new ClickToExpand(message, expanded, (open) => {
+        const row = compactRow(
+          "\uea85",
+          "Terminal",
+          summary,
+          failed ? "error" : killed ? "stopped" : "done",
+          open,
+          theme,
+          outputPad,
+        );
+        if (!open) return row;
+        const box = new Box(outputPad, 1, (text) =>
+          theme.bg(failed ? "toolErrorBg" : "toolSuccessBg", text),
+        );
         box.addChild(new Markdown(body, 0, 0, getMarkdownTheme()));
-      }
-      return box;
+        const wrapper = new Container();
+        wrapper.addChild(row);
+        wrapper.addChild(box);
+        return wrapper;
+      });
     },
   );
 
